@@ -1,0 +1,175 @@
+import pandas as pd
+import yfinance as yf
+import numpy as np
+import time
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from newsapi import NewsApiClient
+from openai import OpenAI
+from datetime import datetime, timedelta
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+
+
+class Agent():
+    def __init__(self, config: dict):
+        self.config = config
+        print("Initializing Agent with config:", config)
+        print("\n\n")
+
+        # Initialize Yahoo Finance client
+        self.ticker = yf.Ticker(config['ticker'])
+        self.stock_info = self.ticker.info
+        self.stock_name = self.stock_info.get('longName', config['ticker'])
+        print(f"Stock name: {self.stock_name}")
+        print("\n\n")
+        # Initialize Google News client
+        self.newsapi = NewsApiClient(api_key=config['news_api_key'])
+        # Initialize OpenAI client
+        self.openAIClient = OpenAI(api_key=config['openai_api_key'])
+
+    def predict(self, date: datetime, verbose: bool = False) -> float:
+        # Prepare your data
+        stock_history_data = self.get_stock_data(date)
+        stock_news_data = self.get_news(date)
+
+        if verbose:
+            print("Stock history data:")
+            print(stock_history_data)
+            print("\n\n")
+            print("Stock news data:")
+            print(stock_news_data)
+            print("\n\n")
+
+        instructions = (
+            """
+                    "You are OpenAIs Financial Forecasting Assistant—an expert model "
+                    "specialized in time-series analysis and news-sentiment extraction. "
+                    "You will use only the data provided below to predict tomorrows closing stock price.\n\n"
+                    "- Ingest the full `{stock_history_data}` without requesting any external data.\n"
+                    "- Analyze recent market sentiment by processing the `{stock_news_data}`.\n"
+                    "- Combine statistical patterns from the history with NLP-driven sentiment scoring of headlines.\n"
+                    "- Do not include any disclaimers, methodology descriptions, or policy notes in your answer.\n"
+                    "- Output exactly one number: your predicted stock price for the next trading day (e.g., 123.45)."
+        """
+        )
+
+        prompt = f"""
+            Historical Stock Data:
+            ```
+            {stock_history_data}
+            ```
+
+            Recent News Titles:
+            ```
+            {stock_news_data}
+            ```
+            Please provide only the predicted closing price as a single numeric value.
+            """
+        # Prepare the input for the API call
+        # Call the API in a retry loop becasue sometimes the LLM responds with "'I’m sorry, but I can’t help with that.'"
+        retry_count = 0
+        while True:
+            try:
+                # reasoning={"effort": "medium"},
+                response = self.openAIClient.responses.create(
+                    model="o4-mini",
+                    instructions=instructions,
+                    input=[
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ]
+                )
+                if verbose:
+                    print("Response from OpenAI:")
+                    print(response.output_text)
+                    print("\n\n")
+                print(f"Response from OpenAI: {response.output_text}\n")
+                return float(response.output_text)
+            except Exception as e:
+                retry_count += 1
+                print(
+                    f"\rRetrying... {retry_count} attempts\n", end='', flush=True)
+                time.sleep(1)
+                if retry_count > 5:
+                    raise e
+
+    def get_stock_data(self, date: datetime, verbose: bool = False) -> pd.DataFrame:
+        start_date = date - timedelta(days=self.config['num_days'])
+        stock_data = yf.download(
+            self.config['ticker'], start=start_date, end=date, progress=verbose, auto_adjust=True)
+        # stock_data.reset_index(inplace=True)
+        # print(stock_data)
+        return stock_data
+
+    def get_news(self, date: datetime) -> list:
+        # Get news articles related to the stock
+        # Free plan only allows 30 days.
+        previous_date = date - timedelta(days=1)
+        start_date = previous_date.strftime("%Y-%m-%d")
+        end_date = date.strftime("%Y-%m-%d")
+        # print(f"Fetching news from {start_date} to {end_date}")
+        all_articles = self.newsapi.get_everything(
+            q=self.stock_name,
+            from_param=start_date,
+            to=end_date,
+            language='en',
+            sort_by='relevancy'
+            # page_size=5
+        )
+        titles = [article['title'] for article in all_articles['articles']]
+        # print(titles)
+        # print(all_articles)
+        return titles
+
+    def plotting(self, start_date: datetime, end_date: datetime, verbose: bool = False) -> pd.DataFrame:
+        # stock_history_data = self.get_stock_data(start_date, end_date + timedelta(days=1), verbose)
+        stock_history_data = yf.download(
+            self.config['ticker'], start=start_date, end=end_date + timedelta(days=1), progress=verbose, auto_adjust=True)
+        stock_history_data.reset_index(inplace=True)
+        print(stock_history_data)
+        results = []
+        for i, date in enumerate(stock_history_data['Date']):
+            actual_price = stock_history_data['Close'].iloc[i].values[0]
+            predicted_price = self.predict(date, verbose)
+            print(
+                f"Predicted price for {self.config['ticker']} on {date.strftime('%Y-%m-%d')}: {predicted_price}\n")
+            print(
+                f"Actual price for {self.config['ticker']} on {date.strftime('%Y-%m-%d')}: {actual_price}\n")
+            results.append({
+                'Date': date.strftime("%Y-%m-%d"),
+                'Predicted Price': predicted_price,
+                'Actual Price': actual_price
+            })
+        results_df = pd.DataFrame(results)
+        actual_prices = results_df['Actual Price'].dropna().values
+        predicted_prices = results_df['Predicted Price'].dropna().values
+        mse = mean_squared_error(actual_prices, predicted_prices)
+        rmse = np.sqrt(mse)
+        mae = mean_absolute_error(actual_prices, predicted_prices)
+        r2 = r2_score(actual_prices, predicted_prices)
+        ndei = rmse / np.std(actual_prices)
+
+        print(f"MSE: {mse}")
+        print(f"RMSE: {rmse}")
+        print(f"MAE: {mae}")
+        print(f"R²: {r2}")
+        print(f"NDEI: {ndei}")
+
+        plt.figure(figsize=(12, 6))
+        plt.plot(results_df['Date'], results_df['Predicted Price'],
+                 label='Predicted', marker='o')
+        plt.plot(results_df['Date'], results_df['Actual Price'],
+                 label='Actual', marker='x')
+        plt.xlabel('Date')
+        plt.ylabel('Price')
+        plt.title('Predicted vs Actual Stock Prices')
+        plt.legend()
+        plt.xticks(rotation=45)
+        plt.grid(True)
+        plt.tight_layout()
+        plt.show()
+
+        return results_df
