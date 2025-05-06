@@ -1,38 +1,96 @@
-# EGR 404 Project Proposal
-
-### Project Partner
-- **Ethan Kaley (Solo)**
-
-### Project Title
-## Financial Stock Prediction AI Agent
-
-### Project Description
-This project aims to develop an AI-powered financial prediction agent designed to accurately forecast stock market trends using advanced large language models (LLMs) from OpenAI. Leveraging publicly available historical financial data from reputable online databases, the agent will generate insightful predictions and actionable investment recommendations. Key functionalities include automated data acquisition, sophisticated preprocessing of financial metrics, predictive analysis utilizing GPT-based models, and user-friendly output featuring clear summaries and intuitive visualizations. This innovative tool aims to empower investors and financial analysts by providing accessible, reliable, and advanced analytics for informed decision-making.
-
-### Resources
-- **Open-source Repositories:** OpenAI GPT models, Pandas (data manipulation), Matplotlib and Seaborn (data visualization)
-- **Data Sources:** Yahoo Finance, Alpha Vantage, and similar publicly accessible financial datasets
-- **Relevant Coursework:** Class assignments involving API integration, JSON data handling, and prompt engineering techniques
-
-### Deliverables
-- Functional prototype showcasing predictive capabilities on selected stock market data
-- Comprehensive GitHub repository containing thoroughly documented code, installation instructions, and detailed user guidelines
-- Visual presentation comparing the model's predictions against historical accuracy to demonstrate effectiveness
-
-### Project Timeline
-- **April 15, 2025:** Completion of data acquisition and preprocessing
-- **April 30, 2025:** Initial demonstration of predictive modeling
-- **May 5, 2025:** Final project submission and presentation
-
-### GitHub Account & Sharing
-A dedicated GitHub repository has been created and shared with sendag@uri.edu and justin_watkins@uri.edu for review and ongoing updates.
-
-**GitHub Link:** [https://github.com/ekaley/egr404-project](https://github.com/ekaley/egr404-project)
+Here's the raw markdown for the updated `README.md`:
 
 
+# Financial Stock Prediction Using Generative AI
 
-8 minue video
-walkthrough the demo
-walkthrough the code (explain) high level
-feedback on process/project
-what was a struggle if any
+**Author**: Ethan Kaley  
+**Course**: EGR 404 – Generative AI Tools  
+**University**: University of Rhode Island
+
+## Overview
+
+This project explores the application of generative AI for predicting stock price movements by integrating financial data and news headlines. Utilizing OpenAI's language models, the system aims to provide insights into stock trends based on recent news and historical financial data.
+
+## Features
+
+- **Data Integration**: Combines historical stock data from Yahoo Finance with current news headlines from NewsAPI.
+- **Generative AI Predictions**: Employs OpenAI's language models to generate stock price predictions.
+- **Performance Metrics**: Calculates model accuracy using MSE, RMSE, MAE, R², and NDEI.
+- **Visualization**: Visual comparison of predicted vs actual stock prices using Matplotlib.
+
+## Technologies Used
+
+- **Programming Language**: Python
+- **APIs**:
+  - [OpenAI Responses API](https://platform.openai.com/docs/api-reference/responses)
+  - [NewsAPI](https://newsapi.org)
+  - [yFinance](https://github.com/ranaroussi/yfinance)
+- **Libraries**:
+  - NumPy
+  - Matplotlib
+
+## How to Run This Code
+
+Follow these steps to set up and run the project locally.
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/ekaley/egr404-project.git
+cd egr404-project
+```
+
+### 2. Set Up a Python Virtual Environment
+```bash
+python -m venv venv
+source venv/bin/activate   # On Windows: venv\Scripts\activate
+```
+
+### 3. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Create a `config.json` File
+
+Create a file named `config.json` in the project root with the following template:
+
+```json
+{
+    "news_api_key": "YOUR_NEWSAPI_KEY_HERE",
+    "ticker": "TICKER_SYMBOL",
+    "num_days": 29,
+    "openai_api_key": "YOUR_OPENAI_API_KEY_HERE"
+}
+```
+
+- You can generate your News API key at [https://newsapi.org](https://newsapi.org).
+- `ticker` should be a valid stock symbol (e.g., `MSFT`, `AAPL`) as seen on [Yahoo Finance](https://finance.yahoo.com).
+- `num_days` should be between **1 and 29** to stay within the free tier limit of the NewsAPI.
+
+### 5. Run the Script
+```bash
+python main.py
+```
+
+The script will:
+- Pull stock price data and news headlines,
+- Query the OpenAI API for predictions,
+- Output prediction results and evaluation metrics,
+- Display a plot comparing actual and predicted stock prices.
+
+## Challenges Encountered
+
+- **API Rate Limiting**: VPNs were used to avoid rate limiting issues with Yahoo Finance during development.
+- **Non-numerical API Responses**: The OpenAI API often returned disclaimers or non-numeric outputs. Extra parsing logic was implemented to retry requests as needed.
+- **NewsAPI Free Tier**: The API only allows access to news from the last 30 days, limiting historical analysis.
+
+## Future Improvements
+
+- Implement response chaining with OpenAI for multi-turn reasoning.
+- Add OpenAI function calling to structure responses more effectively.
+- Support more flexible data sources beyond the free tier limitations.
+- Expand forecasting to multi-day predictions.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.

@@ -157,42 +157,17 @@ class Agent():
         print(f"R²: {r2}")
         print(f"NDEI: {ndei}")
 
-        # Plotting
-        plt.figure(figsize=(14, 8))
+        plt.figure(figsize=(12, 6))
         plt.plot(results_df['Date'], results_df['Predicted Price'],
-                 label='Predicted', marker='o', color='blue', linewidth=2)
+                 label='Predicted', marker='o')
         plt.plot(results_df['Date'], results_df['Actual Price'],
-                 label='Actual', marker='x', color='orange', linewidth=2)
-
-        # Highlight the highest and lowest predicted prices
-        max_predicted = results_df.loc[results_df['Predicted Price'].idxmax()]
-        min_predicted = results_df.loc[results_df['Predicted Price'].idxmin()]
-        plt.annotate(f"Max: {max_predicted['Predicted Price']:.2f}",
-                     xy=(max_predicted['Date'], max_predicted['Predicted Price']),
-                     xytext=(max_predicted['Date'], max_predicted['Predicted Price'] + 5),
-                     arrowprops=dict(facecolor='green', arrowstyle="->"),
-                     fontsize=10, color='green')
-        plt.annotate(f"Min: {min_predicted['Predicted Price']:.2f}",
-                     xy=(min_predicted['Date'], min_predicted['Predicted Price']),
-                     xytext=(min_predicted['Date'], min_predicted['Predicted Price'] - 5),
-                     arrowprops=dict(facecolor='red', arrowstyle="->"),
-                     fontsize=10, color='red')
-
-        # Add grid, labels, and title
-        plt.grid(color='lightgray', linestyle='--', linewidth=0.5)
-        plt.xlabel('Date', fontsize=12)
-        plt.ylabel('Price', fontsize=12)
-        plt.title(f'Predicted vs Actual Stock Prices for {self.config["ticker"]}', fontsize=16, fontweight='bold')
-
-        # Format x-axis dates
-        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-        plt.gca().xaxis.set_major_locator(mdates.AutoDateLocator())
-        plt.xticks(rotation=45, fontsize=10)
-
-        # Add legend outside the plot
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), ncol=2, fontsize=12)
-
-        # Adjust layout and show plot
+                 label='Actual', marker='x')
+        plt.xlabel('Date')
+        plt.ylabel('Price')
+        plt.title('Predicted vs Actual Stock Prices')
+        plt.legend()
+        plt.xticks(rotation=45)
+        plt.grid(True)
         plt.tight_layout()
         plt.show()
 
